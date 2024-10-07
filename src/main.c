@@ -964,7 +964,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,false);
+                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,true);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
