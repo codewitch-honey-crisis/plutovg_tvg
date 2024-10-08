@@ -574,6 +574,11 @@ static result_t tvg_parse_fill_poly_header(tvg_context_t* ctx,int kind,tvg_fill_
     }
     return TVG_SUCCESS;
 }
+static float tvg_distance(const tvg_point_t* lhs,const tvg_point_t* rhs) {
+    float xd = rhs->x-lhs->x;
+    float yd = rhs->y-lhs->y;
+    return sqrtf((xd*xd)+(yd*yd));
+}
 static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
     plutovg_color_t col;
     float r;
@@ -623,8 +628,7 @@ static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
             col.b=ctx->colors[style->radial.color1].b;
             stops[1].color = col;
             stops[1].offset = 1;
-            r=sqrtf(powf(style->radial.point1.x-style->radial.point1.x,2.f)+
-                powf(style->radial.point1.y-style->radial.point1.y,2.f));
+            r=tvg_distance(&style->radial.point0,&style->radial.point1);
             plutovg_canvas_set_radial_gradient(ctx->cvs,
                                                 style->radial.point0.x,
                                                 style->radial.point0.y,
@@ -632,7 +636,7 @@ static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
                                                 style->radial.point1.x,
                                                 style->radial.point1.y,
                                                 r,
-                                                PLUTOVG_SPREAD_METHOD_PAD,
+                                                PLUTOVG_SPREAD_METHOD_REFLECT,
                                                 stops,
                                                 2,
                                                 NULL);
