@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h> 
 #include <stdio.h>
 #include <plutovg.h>
 #define TVG_PI (3.1415926536f)
@@ -103,6 +104,16 @@ enum {
     TVG_E_OUT_OF_MEMORY,
     TVG_E_NOT_SUPPORTED
 };
+
+typedef struct {
+    union {
+        struct {
+            uint16_t a : 8;
+            uint16_t b : 8;
+        } magic;
+        uint16_t data;
+    };
+} tvg_magic_t;
 
 typedef struct {
     float r,g,b,a;
@@ -386,10 +397,17 @@ static result_t tvg_read_point(tvg_context_t* ctx, tvg_point_t* out_point) {
 
 static result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     uint8_t data[4];
-    if(2>ctx->inp(data,2,ctx->inp_state)) {
+    
+    // the following magic sig check does two things:
+    // it determines that the file is a TVG file, AND
+    // that the compiler is treating the woefully underdefined
+    // bitfield spec the way we expect. If one of those things
+    // isn't the case, we fail with TVG_E_INVALID_FORMAT
+    tvg_magic_t m;
+    if(2>ctx->inp((uint8_t*)&m.data,sizeof(uint16_t),ctx->inp_state)) {
         return TVG_E_IO_ERROR;
     }
-    if(data[0]!=0x72 || data[1]!=0x56) {
+    if(m.magic.a!=0x72 || m.magic.b!=0x56) {
         return TVG_E_INVALID_FORMAT;
     }
     if(1>ctx->inp(data,1,ctx->inp_state)) {
@@ -1241,7 +1259,6 @@ size_t inp_func(uint8_t* data,size_t to_read, void* state) {
 }
 int main(int argc, char* argv[])
 {
-
     const char* input = "..\\..\\chart.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input,"rb");
