@@ -1067,13 +1067,13 @@ static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,size_t size
     }
     plutovg_canvas_set_fill_rule(ctx->cvs,PLUTOVG_FILL_RULE_EVEN_ODD);
     plutovg_canvas_set_opacity(ctx->cvs,1.0);
-    res = tvg_apply_style(ctx,fill_style);
-    if(res!=TVG_SUCCESS) return res;
     while(count--) {
         res = tvg_read_point(ctx,&pt); if(res!=TVG_SUCCESS) return res;
         float w,h;
         res=tvg_read_unit(ctx,&w); if(res!=TVG_SUCCESS) return res;
         res=tvg_read_unit(ctx,&h); if(res!=TVG_SUCCESS) return res;
+        res = tvg_apply_style(ctx,fill_style);
+        if(res!=TVG_SUCCESS) return res;
         plutovg_canvas_rect(ctx->cvs,pt.x,pt.y,w,h);
         plutovg_canvas_fill_preserve(ctx->cvs);
         plutovg_canvas_set_line_width(ctx->cvs,line_width);
@@ -1329,7 +1329,7 @@ size_t inp_func(uint8_t* data,size_t to_read, void* state) {
 }
 int main(int argc, char* argv[])
 {
-    const char* input = "..\\..\\chart.tvg";
+    const char* input = "..\\..\\everything-32.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input,"rb");
     uint32_t w,h;
