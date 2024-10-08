@@ -192,7 +192,7 @@ typedef struct {
     uint32_t color1;
 } tvg_gradient_t;
 
-typedef union {
+typedef struct {
     uint8_t kind;
     uint32_t flat; // color index
     tvg_gradient_t linear;
@@ -493,15 +493,24 @@ static result_t tvg_parse_gradient(tvg_context_t* ctx, tvg_gradient_t* out_gradi
 }
 static result_t tvg_parse_style(tvg_context_t* ctx,int kind, tvg_style_t* out_style) {
     result_t res;
+    uint32_t flat;
+    tvg_gradient_t grad;
+    out_style->kind = kind;
     switch(kind) {
         case TVG_STYLE_FLAT:
-            res= tvg_read_u32(ctx,&out_style->flat);
+            res= tvg_read_u32(ctx,&flat);
+            if(res!=TVG_SUCCESS) {
+                return res;
+            }
+            out_style->flat = flat;
             break;
         case TVG_STYLE_LINEAR:
-            res= tvg_parse_gradient(ctx,&out_style->linear);
+            res= tvg_parse_gradient(ctx,&grad);
+            out_style->linear = grad;
             break;
         case TVG_STYLE_RADIAL:
-            res= tvg_parse_gradient(ctx,&out_style->radial);
+            res= tvg_parse_gradient(ctx,&grad);
+            out_style->radial = grad;
             break;
         default:
             res= TVG_E_INVALID_FORMAT;
@@ -510,7 +519,6 @@ static result_t tvg_parse_style(tvg_context_t* ctx,int kind, tvg_style_t* out_st
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_style->kind = kind;
     return res;
 }
 static result_t tvg_parse_fill_rectangles_header(tvg_context_t* ctx,int kind,tvg_fill_rectangles_t* out_header) {
@@ -887,7 +895,7 @@ static result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
 error:
     return res;
 }
-static result_t tvg_parse_polyline(tvg_context_t* ctx,size_t size, const tvg_style_t* line_style, float line_width, int kind, bool close) {
+static result_t tvg_parse_polyline(tvg_context_t* ctx,size_t size, const tvg_style_t* line_style, float line_width, bool close) {
     tvg_point_t pt;
     result_t res=tvg_read_point(ctx,&pt);
     if(res!=TVG_SUCCESS) {
@@ -916,7 +924,7 @@ static result_t tvg_parse_polyline(tvg_context_t* ctx,size_t size, const tvg_sty
     plutovg_canvas_stroke(ctx->cvs);
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_lines(tvg_context_t* ctx,size_t size, const tvg_style_t* line_style, float line_width, int kind) {
+static result_t tvg_parse_lines(tvg_context_t* ctx,size_t size, const tvg_style_t* line_style, float line_width) {
     tvg_point_t pt;
     result_t res;
     for(int i = 0;i<size;++i) {
@@ -946,7 +954,7 @@ static result_t tvg_parse_lines(tvg_context_t* ctx,size_t size, const tvg_style_
     return TVG_SUCCESS;
 
 }
-static result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* style, int kind) {
+static result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* style) {
     result_t res=TVG_SUCCESS;
     size_t total = 0;
     uint32_t* sizes = (uint32_t*)malloc(size*sizeof(uint32_t));
@@ -980,7 +988,7 @@ error:
     free(sizes);
     return res;
 }
-static result_t tvg_parse_line_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* line_style, float line_width, int kind) {
+static result_t tvg_parse_line_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* line_style, float line_width) {
     result_t res=TVG_SUCCESS;
     size_t total = 0;
     uint32_t* sizes = (uint32_t*)malloc(size*sizeof(uint32_t));
@@ -1014,7 +1022,7 @@ error:
     free(sizes);
     return res;
 }
-static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width, int kind, bool close) {    
+static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width, bool close) {    
     plutovg_canvas_set_fill_rule(ctx->cvs,PLUTOVG_FILL_RULE_EVEN_ODD);
     plutovg_canvas_set_opacity(ctx->cvs,1.0);
     result_t res = tvg_apply_style(ctx,fill_style);
@@ -1049,7 +1057,7 @@ static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size,
 
     return res;
 }
-static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width, int kind) {
+static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width) {
     size_t count = size;
     size_t szb = count*sizeof(tvg_rect_t);
     result_t res;
@@ -1077,7 +1085,7 @@ static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,size_t size
     return TVG_SUCCESS;
 }
 
-static result_t tvg_parse_outline_fill_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width, int kind) {
+static result_t tvg_parse_outline_fill_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width) {
     result_t res=TVG_SUCCESS;
      
     size_t total = 0;
@@ -1167,7 +1175,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_fill_paths(ctx,data.size,&data.style,cmd.style);
+                res=tvg_parse_fill_paths(ctx,data.size,&data.style);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1179,7 +1187,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_lines(ctx,data.size,&data.style,data.line_width,cmd.style);
+                res=tvg_parse_lines(ctx,data.size,&data.style,data.line_width);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1191,7 +1199,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,true);
+                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,true);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1203,7 +1211,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,false);
+                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,false);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1215,7 +1223,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_line_paths(ctx,data.size,&data.style,data.line_width,cmd.style);
+                res=tvg_parse_line_paths(ctx,data.size,&data.style,data.line_width);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1227,7 +1235,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_outline_fill_polyline(ctx,data.size,&data.fill_style,&data.line_style,data.line_width,cmd.style,true);
+                res=tvg_parse_outline_fill_polyline(ctx,data.size,&data.fill_style,&data.line_style,data.line_width,true);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1239,7 +1247,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_outline_fill_rectangles(ctx,data.size,&data.fill_style,&data.line_style,data.line_width,cmd.style);
+                res=tvg_parse_outline_fill_rectangles(ctx,data.size,&data.fill_style,&data.line_style,data.line_width);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1250,7 +1258,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_outline_fill_paths(ctx,data.size,&data.fill_style,&data.line_style,data.line_width,cmd.style);
+                res=tvg_parse_outline_fill_paths(ctx,data.size,&data.fill_style,&data.line_style,data.line_width);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1321,7 +1329,7 @@ size_t inp_func(uint8_t* data,size_t to_read, void* state) {
 }
 int main(int argc, char* argv[])
 {
-    const char* input = "..\\..\\everything-32.tvg";
+    const char* input = "..\\..\\chart.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input,"rb");
     uint32_t w,h;
