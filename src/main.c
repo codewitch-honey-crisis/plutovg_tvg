@@ -190,34 +190,37 @@ typedef union {
 typedef struct {
     tvg_style_t style;
     size_t size;
-    tvg_point_t* values;
+
 } tvg_fill_polygon_t;
 
 typedef struct {
     tvg_style_t style;
     size_t size;
-    tvg_rect_t* values;
 }  tvg_fill_rectangles_t;
 
 typedef struct {
     tvg_style_t style;
     size_t size;
-    tvg_path_segment_t* values;
 } tvg_fill_path_t;
+
+typedef struct {
+    tvg_style_t style;
+    float line_width;
+    size_t size;
+} tvg_line_path_t;
 
 typedef struct {
     tvg_style_t fill_style;
     tvg_style_t line_style;
     float line_width;
     size_t size;
-    tvg_path_segment_t* values;
 } tvg_outline_fill_path_t;
+
 typedef struct {
     tvg_style_t style;
-    uint32_t line_width;
+    float line_width;
     size_t size;
-    tvg_point_t* values;
-} tvg_line_strip_t;
+} tvg_lines_t;
 
 typedef size_t(*tvg_input_func_t)(uint8_t* data, size_t size, void* state);
 
@@ -356,6 +359,31 @@ static result_t tvg_read_u32(tvg_context_t* ctx,uint32_t *out_value) {
     *out_value = result;
     return TVG_SUCCESS;
 }
+static result_t tvg_read_unit(tvg_context_t* ctx, float* out_value) {
+    uint32_t val;
+    result_t res = tvg_read_coord(ctx,&val);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    *out_value = tvg_downscale_coord(ctx,val);
+    return TVG_SUCCESS;
+}
+
+static result_t tvg_read_point(tvg_context_t* ctx, tvg_point_t* out_point) {
+    float f32;
+    result_t res = tvg_read_unit(ctx,&f32);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    out_point->x = f32;
+    res = tvg_read_unit(ctx,&f32);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    out_point->y = f32;
+    return TVG_SUCCESS;
+}
+
 static result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     uint8_t data[4];
     if(2>ctx->inp(data,2,ctx->inp_state)) {
@@ -425,15 +453,6 @@ static result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     }
     return TVG_SUCCESS;
 }
-static result_t tvg_read_unit(tvg_context_t* ctx, float* out_value) {
-    uint32_t val;
-    result_t res = tvg_read_coord(ctx,&val);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    *out_value = tvg_downscale_coord(ctx,val);
-    return TVG_SUCCESS;
-}
 static result_t tvg_parse_gradient(tvg_context_t* ctx, tvg_gradient_t* out_gradient) {
     uint32_t u32;
     result_t res = tvg_read_u32(ctx,&u32); if(res!=TVG_SUCCESS) { return res; }
@@ -480,7 +499,6 @@ static result_t tvg_parse_fill_rectangles_header(tvg_context_t* ctx,int kind,tvg
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_header->values = NULL;
     return TVG_SUCCESS;
 }
 static result_t tvg_parse_fill_path_header(tvg_context_t* ctx,int kind,tvg_fill_path_t* out_header) {
@@ -495,7 +513,24 @@ static result_t tvg_parse_fill_path_header(tvg_context_t* ctx,int kind,tvg_fill_
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_header->values = NULL;
+    return TVG_SUCCESS;
+}
+static result_t tvg_parse_line_path_header(tvg_context_t* ctx,int kind,tvg_line_path_t* out_header) {
+    uint32_t u32;
+    result_t res = tvg_read_u32(ctx,&u32);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    size_t count = (size_t)u32+ 1;
+    out_header->size = count;
+    res = tvg_parse_style(ctx,kind,&out_header->style);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    res = tvg_read_unit(ctx,&out_header->line_width);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
     return TVG_SUCCESS;
 }
 
@@ -511,40 +546,70 @@ static result_t tvg_parse_fill_poly_header(tvg_context_t* ctx,int kind,tvg_fill_
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_header->values = NULL;
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_fill_rectangles_data(tvg_context_t* ctx,tvg_fill_rectangles_t* in_out_header) {
-    typedef tvg_rect_t ST;
-    size_t count = in_out_header->size;
-    size_t szb = count*sizeof(ST);
-    ST* values = (ST*)malloc(szb);
-    if(values==NULL) {
-        return TVG_E_OUT_OF_MEMORY;
+static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style, int kind) {
+    plutovg_color_t col;
+    
+    switch(kind) {
+        case TVG_STYLE_FLAT:
+            col.a=ctx->colors[style->flat].a;
+            col.r=ctx->colors[style->flat].r;
+            col.g=ctx->colors[style->flat].g;
+            col.b=ctx->colors[style->flat].b;
+            plutovg_canvas_set_color(ctx->cvs,&col);
+            break;
+        case TVG_STYLE_LINEAR:
+        case TVG_STYLE_RADIAL:
+            // TODO: implement these
+            return TVG_E_NOT_SUPPORTED;
+        default:
+            return TVG_E_INVALID_FORMAT;
     }
-    if(szb>ctx->inp((uint8_t*)values,szb,ctx->inp_state)) {
-        free(values);
-        return TVG_E_IO_ERROR;
-    }
-    in_out_header->values = values;
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_fill_polygon_data(tvg_context_t* ctx,tvg_fill_polygon_t* in_out_header) {
-    typedef tvg_point_t ST;
-    size_t count = in_out_header->size;
-    size_t szb = count*sizeof(ST);
-    ST* values = (ST*)malloc(szb);
-    if(values==NULL) {
-        return TVG_E_OUT_OF_MEMORY;
+static result_t tvg_parse_fill_rectangles(tvg_context_t* ctx,size_t size, const tvg_style_t* fill_style, int kind) {
+    size_t count = size;
+    size_t szb = count*sizeof(tvg_rect_t);
+    result_t res;
+    tvg_point_t pt;
+    plutovg_canvas_set_fill_rule(ctx->cvs,PLUTOVG_FILL_RULE_EVEN_ODD);
+    plutovg_canvas_set_opacity(ctx->cvs,1.0);
+    res = tvg_apply_style(ctx,fill_style,kind);
+    if(res!=TVG_SUCCESS) return res;
+    while(count--) {
+        res = tvg_read_point(ctx,&pt); if(res!=TVG_SUCCESS) return res;
+        float w,h;
+        res=tvg_read_unit(ctx,&w); if(res!=TVG_SUCCESS) return res;
+        res=tvg_read_unit(ctx,&h); if(res!=TVG_SUCCESS) return res;
+        plutovg_canvas_rect(ctx->cvs,pt.x,pt.y,w,h);
     }
-    if(szb>ctx->inp((uint8_t*)values,szb,ctx->inp_state)) {
-        free(values);
-        return TVG_E_IO_ERROR;
-    }
-    in_out_header->values = values;
+
+    tvg_apply_style(ctx,fill_style,kind);
+    plutovg_canvas_fill(ctx->cvs);
+
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_line_strip_header(tvg_context_t* ctx,int kind,tvg_line_strip_t* out_header) {
+static result_t tvg_parse_fill_polygon(tvg_context_t* ctx,size_t size, const tvg_style_t* fill_style, int kind) {
+    size_t count = size;
+    tvg_point_t pt;
+    result_t res = tvg_read_point(ctx,&pt);
+    if(res!=TVG_SUCCESS) return res;
+    plutovg_canvas_set_fill_rule(ctx->cvs,PLUTOVG_FILL_RULE_EVEN_ODD);
+    plutovg_canvas_set_opacity(ctx->cvs,1.0);
+    res = tvg_apply_style(ctx,fill_style,kind);
+    if(res!=TVG_SUCCESS) return res;
+    plutovg_canvas_move_to(ctx->cvs,pt.x,pt.y);
+    while(--count) {
+        res = tvg_read_point(ctx,&pt);
+        if(res!=TVG_SUCCESS) return res;
+        plutovg_canvas_line_to(ctx->cvs,pt.x,pt.y);
+    }
+    tvg_apply_style(ctx,fill_style,kind);
+    plutovg_canvas_fill(ctx->cvs);
+    return TVG_SUCCESS;
+}
+static result_t tvg_parse_lines_header(tvg_context_t* ctx,int kind,tvg_lines_t* out_header) {
     uint32_t u32;
     result_t res = tvg_read_u32(ctx,&u32);
     if(res!=TVG_SUCCESS) {
@@ -556,11 +621,11 @@ static result_t tvg_parse_line_strip_header(tvg_context_t* ctx,int kind,tvg_line
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    res = tvg_read_u32(ctx, &out_header->line_width);
+    res = tvg_read_unit(ctx,&out_header->line_width);
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_header->values = NULL;
+    
     return TVG_SUCCESS;
 }
 static result_t tvg_parse_outline_fill_path_header(tvg_context_t* ctx,int kind,tvg_outline_fill_path_t* out_header) {
@@ -587,41 +652,7 @@ static result_t tvg_parse_outline_fill_path_header(tvg_context_t* ctx,int kind,t
     if(res!=TVG_SUCCESS) {
         return res;
     }
-    out_header->values = NULL;
-    return TVG_SUCCESS;
-}
-static result_t tvg_read_point(tvg_context_t* ctx, tvg_point_t* out_point) {
-    float f32;
-    result_t res = tvg_read_unit(ctx,&f32);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    out_point->x = f32;
-    res = tvg_read_unit(ctx,&f32);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    out_point->y = f32;
-    return TVG_SUCCESS;
-}
-static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style, int kind) {
-    plutovg_color_t col;
     
-    switch(kind) {
-        case TVG_STYLE_FLAT:
-            col.a=ctx->colors[style->flat].a;
-            col.r=ctx->colors[style->flat].r;
-            col.g=ctx->colors[style->flat].g;
-            col.b=ctx->colors[style->flat].b;
-            plutovg_canvas_set_color(ctx->cvs,&col);
-            break;
-        case TVG_STYLE_LINEAR:
-        case TVG_STYLE_RADIAL:
-            // TODO: implement these
-            return TVG_E_NOT_SUPPORTED;
-        default:
-            return TVG_E_INVALID_FORMAT;
-    }
     return TVG_SUCCESS;
 }
 static result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
@@ -810,6 +841,36 @@ static result_t tvg_parse_polyline(tvg_context_t* ctx,size_t size, const tvg_sty
     plutovg_canvas_stroke(ctx->cvs);
     return TVG_SUCCESS;
 }
+static result_t tvg_parse_lines(tvg_context_t* ctx,size_t size, const tvg_style_t* line_style, float line_width, int kind) {
+    tvg_point_t pt;
+    result_t res=tvg_read_point(ctx,&pt);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    for(int i = 1;i<size;++i) {
+        res=tvg_read_point(ctx,&pt);
+        if(res!=TVG_SUCCESS) {
+            return res;
+        }
+        plutovg_canvas_move_to(ctx->cvs,pt.x,pt.y);
+        res=tvg_read_point(ctx,&pt);
+        if(res!=TVG_SUCCESS) {
+            return res;
+        }
+        plutovg_canvas_line_to(ctx->cvs,pt.x,pt.y);
+    }
+    res = tvg_apply_style(ctx,line_style,kind);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    if(line_width==0) { // WTH?
+        line_width = .001;
+    }
+    plutovg_canvas_set_line_width(ctx->cvs,line_width);
+    // render
+    plutovg_canvas_stroke(ctx->cvs);
+    return TVG_SUCCESS;
+}
 static result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* style, int kind) {
     result_t res=TVG_SUCCESS;
     size_t total = 0;
@@ -842,6 +903,75 @@ static result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size, const tvg_
     plutovg_canvas_fill(ctx->cvs);
 error:
     free(sizes);
+    return res;
+}
+static result_t tvg_parse_line_paths(tvg_context_t* ctx, size_t size, const tvg_style_t* line_style, float line_width, int kind) {
+    result_t res=TVG_SUCCESS;
+    size_t total = 0;
+    uint32_t* sizes = (uint32_t*)malloc(size*sizeof(uint32_t));
+    if(sizes==NULL) {
+        return TVG_E_OUT_OF_MEMORY;
+    }
+    plutovg_canvas_set_opacity(ctx->cvs,1.0);
+    plutovg_canvas_set_rgb(ctx->cvs,0,0,0);
+    
+    for(size_t i = 0;i<size;++i) {
+         res = tvg_read_u32(ctx,&sizes[i]);
+         ++sizes[i];
+         if(res!=TVG_SUCCESS) {
+            goto error;
+         }
+         total += sizes[i];
+    }
+    res = tvg_apply_style(ctx,line_style,kind);
+    if(res!=TVG_SUCCESS) {
+        goto error;
+    }
+    // parse path
+    for(size_t i = 0; i<size;++i) {
+        res = tvg_parse_path(ctx,sizes[i]);
+        if(res!=TVG_SUCCESS) {
+            goto error;
+        }
+    }
+    plutovg_canvas_stroke(ctx->cvs);
+error:
+    free(sizes);
+    return res;
+}
+static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size, const tvg_style_t* fill_style,const tvg_style_t* line_style,float line_width, int kind, bool close) {    
+    plutovg_canvas_set_fill_rule(ctx->cvs,PLUTOVG_FILL_RULE_EVEN_ODD);
+    plutovg_canvas_set_opacity(ctx->cvs,1.0);
+    result_t res = tvg_apply_style(ctx,fill_style,kind);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    tvg_point_t pt;
+    res = tvg_read_point(ctx,&pt);
+    plutovg_canvas_move_to(ctx->cvs,pt.x,pt.y);
+    for(int i = 1;i<size;++i) {
+        res=tvg_read_point(ctx,&pt);
+        if(res!=TVG_SUCCESS) {
+            return res;
+        }
+        plutovg_canvas_line_to(ctx->cvs,pt.x,pt.y);
+    }
+    if(close) {
+        plutovg_canvas_close_path(ctx->cvs);
+    }
+
+    plutovg_canvas_fill_preserve(ctx->cvs);
+    res = tvg_apply_style(ctx,line_style,kind);
+    if(res!=TVG_SUCCESS) {
+        return res;
+    }
+    if(line_width==0) { // WTH?
+        line_width = .001;
+    }
+    plutovg_canvas_set_line_width(ctx->cvs,line_width);
+    // render
+    plutovg_canvas_stroke(ctx->cvs);
+
     return res;
 }
 
@@ -911,12 +1041,10 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_fill_polygon_data(ctx,&data);
+                res=tvg_parse_fill_polygon(ctx,data.size,&data.style ,cmd.style);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                // TODO: render poly
-                free(data.values);
             }
             break;
             case TVG_CMD_FILL_RECTANGLES: {
@@ -925,13 +1053,9 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_fill_rectangles_data(ctx,&data);
+                res=tvg_parse_fill_rectangles(ctx,data.size,&data.style,cmd.style);
                 if(res!=TVG_SUCCESS) {
                     return res;
-                }
-                // TODO: render rectangles
-                if(data.values!=NULL) {
-                    free(data.values);
                 }
             }
             break;
@@ -947,20 +1071,20 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
             }
             break;
-            case TVG_CMD_DRAW_LINE_STRIP: {
-                tvg_line_strip_t data;
-                res=tvg_parse_line_strip_header (ctx,cmd.style,&data);
+            case TVG_CMD_DRAW_LINES: {
+                tvg_lines_t data;
+                res=tvg_parse_lines_header (ctx,cmd.style,&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
-                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,false);
+                res=tvg_parse_lines(ctx,data.size,&data.style,data.line_width,cmd.style);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
             }
             case TVG_CMD_DRAW_LINE_LOOP: {
-                tvg_line_strip_t data;
-                res=tvg_parse_line_strip_header (ctx,cmd.style,&data);
+                tvg_lines_t data;
+                res=tvg_parse_lines_header (ctx,cmd.style,&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -970,7 +1094,42 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
             }
             
+            case TVG_CMD_DRAW_LINE_STRIP: {
+                tvg_lines_t data;
+                res=tvg_parse_lines_header (ctx,cmd.style,&data);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+                res=tvg_parse_polyline(ctx,data.size,&data.style,data.line_width,cmd.style,false);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+            }
+            case TVG_CMD_DRAW_LINE_PATH: {
+                tvg_line_path_t data;
+                res = tvg_parse_line_path_header(ctx,cmd.style,&data);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+                res=tvg_parse_line_paths(ctx,data.size,&data.style,data.line_width,cmd.style);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+            }
             break;
+            case TVG_CMD_OUTLINE_FILL_POLYGON: {
+                tvg_outline_fill_path_t data;
+                res = tvg_parse_line_path_header(ctx,cmd.style,&data);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+                res=tvg_parse_outline_fill_polyline(ctx,data.size,&data.fill_style,&data.line_style,data.line_width,cmd.style,true);
+                if(res!=TVG_SUCCESS) {
+                    return res;
+                }
+            }
+            break;
+            //case TVG_CMD_OUTLINE_FILL_RECTANGLES:
             case TVG_CMD_OUTLINE_FILL_PATH: {
                 tvg_outline_fill_path_t data;
                 res = tvg_parse_outline_fill_path_header(ctx,cmd.style,&data);
