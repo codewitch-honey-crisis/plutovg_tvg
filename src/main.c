@@ -162,11 +162,6 @@ typedef struct {
 } tvg_rect_t;
 
 typedef struct {
-    size_t size;
-    tvg_point_t* values;
-} tvg_path_segment_t;
-
-typedef struct {
     tvg_point_t point0;
     tvg_point_t point1;
     uint32_t color0;
@@ -230,15 +225,6 @@ typedef struct {
 } tvg_context_t;
 
 typedef int result_t;
-
-tvg_rgba32_t tvg_to_rgba32(const tvg_rgba_t* val) {
-    tvg_rgba32_t result;
-    result.r = ((int)(val->r*255.f)&0xFF);
-    result.g = ((int)(val->g*255.f)&0xFF);
-    result.b = ((int)(val->b*255.f)&0xFF);
-    result.a = ((int)(val->a*255.f)&0xFF);
-    return result;
-}
 
 static uint32_t tvg_map_zero_to_max(tvg_context_t* ctx,uint32_t value) {
     if(0==value) {
