@@ -568,7 +568,8 @@ static result_t tvg_parse_fill_poly_header(tvg_context_t* ctx,int kind,tvg_fill_
 }
 static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style, int kind) {
     plutovg_color_t col;
-    
+    float r;
+    plutovg_gradient_stop_t stops[2];
     switch(kind) {
         case TVG_STYLE_FLAT:
             col.a=ctx->colors[style->flat].a;
@@ -578,9 +579,56 @@ static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style, in
             plutovg_canvas_set_color(ctx->cvs,&col);
             break;
         case TVG_STYLE_LINEAR:
+            col.a=ctx->colors[style->linear.color0].a;
+            col.r=ctx->colors[style->linear.color0].r;
+            col.g=ctx->colors[style->linear.color0].g;
+            col.b=ctx->colors[style->linear.color0].b;
+            stops[0].color = col;
+            stops[0].offset = 0;
+            col.a=ctx->colors[style->linear.color1].a;
+            col.r=ctx->colors[style->linear.color1].r;
+            col.g=ctx->colors[style->linear.color1].g;
+            col.b=ctx->colors[style->linear.color1].b;
+            stops[1].color = col;
+            stops[1].offset = 1;
+            plutovg_canvas_set_linear_gradient(ctx->cvs,
+                                                style->linear.point0.x,
+                                                style->linear.point0.y,
+                                                style->linear.point1.x,
+                                                style->linear.point1.y,
+                                                PLUTOVG_SPREAD_METHOD_PAD,
+                                                stops,
+                                                2,
+                                                NULL);
+            
+            break;
         case TVG_STYLE_RADIAL:
-            // TODO: implement these
-            return TVG_E_NOT_SUPPORTED;
+            col.a=ctx->colors[style->radial.color0].a;
+            col.r=ctx->colors[style->radial.color0].r;
+            col.g=ctx->colors[style->radial.color0].g;
+            col.b=ctx->colors[style->radial.color0].b;
+            stops[0].color = col;
+            stops[0].offset = 0;
+            col.a=ctx->colors[style->radial.color1].a;
+            col.r=ctx->colors[style->radial.color1].r;
+            col.g=ctx->colors[style->radial.color1].g;
+            col.b=ctx->colors[style->radial.color1].b;
+            stops[1].color = col;
+            stops[1].offset = 1;
+            r=sqrtf(powf(style->radial.point1.x-style->radial.point1.x,2.f)+
+                powf(style->radial.point1.y-style->radial.point1.y,2.f));
+            plutovg_canvas_set_radial_gradient(ctx->cvs,
+                                                style->radial.point0.x,
+                                                style->radial.point0.y,
+                                                r,
+                                                style->radial.point1.x,
+                                                style->radial.point1.y,
+                                                r,
+                                                PLUTOVG_SPREAD_METHOD_PAD,
+                                                stops,
+                                                2,
+                                                NULL);
+            break;
         default:
             return TVG_E_INVALID_FORMAT;
     }
@@ -1259,7 +1307,7 @@ size_t inp_func(uint8_t* data,size_t to_read, void* state) {
 }
 int main(int argc, char* argv[])
 {
-    const char* input = "..\\..\\tiger.tvg";
+    const char* input = "..\\..\\feature-test.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input,"rb");
     uint32_t w,h;
