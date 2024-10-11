@@ -540,24 +540,6 @@ static result_t tvg_parse_fill_header(tvg_context_t* ctx,int kind,tvg_fill_heade
     }
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_line_path_header(tvg_context_t* ctx,int kind,tvg_line_header_t* out_header) {
-    uint32_t u32;
-    result_t res = tvg_read_u32(ctx,&u32);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    size_t count = (size_t)u32+ 1;
-    out_header->size = count;
-    res = tvg_parse_style(ctx,kind,&out_header->style);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    res = tvg_read_unit(ctx,&out_header->line_width);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    return TVG_SUCCESS;
-}
 
 static float tvg_distance(const tvg_point_t* lhs,const tvg_point_t* rhs) {
     float xd = rhs->x-lhs->x;
