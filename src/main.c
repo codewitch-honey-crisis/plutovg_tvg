@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
-#include <assert.h> 
 #include <stdio.h>
 #include <plutovg.h>
 #define TVG_PI (3.1415926536f)
