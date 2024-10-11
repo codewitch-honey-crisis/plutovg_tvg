@@ -831,6 +831,7 @@ static tvg_result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
 error:
     return res;
 }
+
 static tvg_result_t tvg_parse_rect(tvg_context_t* ctx, tvg_rect_t* out_rect) {
     tvg_point_t pt;
     tvg_result_t res = tvg_read_point(ctx, &pt);
@@ -846,6 +847,7 @@ static tvg_result_t tvg_parse_rect(tvg_context_t* ctx, tvg_rect_t* out_rect) {
     out_rect->height = h;
     return TVG_SUCCESS;
 }
+
 static tvg_result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
                                           const tvg_style_t* fill_style) {
     size_t count = size;
