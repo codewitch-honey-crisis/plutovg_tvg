@@ -394,12 +394,6 @@ static float tvg_downscale_coord(tvg_context_t* ctx, uint32_t coord) {
     return (float)coord / (float)factor;
 }
 
-static uint32_t tvg_upscale_coord(tvg_context_t* ctx, uint32_t coord) {
-    uint16_t factor = (((uint16_t)1) << ctx->scale);
-    return (uint32_t)((float)coord * (float)factor) + 0.5f;
-    ;
-}
-
 static tvg_result_t tvg_read_varuint(tvg_context_t* ctx, uint32_t* out_value) {
     int count = 0;
     uint32_t result = 0;
