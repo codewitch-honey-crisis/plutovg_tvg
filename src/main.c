@@ -437,7 +437,7 @@ static tvg_result_t tvg_read_point(tvg_context_t* ctx, tvg_point_t* out_point) {
 }
 
 static tvg_result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
-    uint8_t data[4];
+    uint8_t data[2];
 
     if (2 > ctx->inp((uint8_t*)data, 2, ctx->inp_state)) {
         return TVG_E_IO_ERROR;
