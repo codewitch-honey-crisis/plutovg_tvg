@@ -900,7 +900,7 @@ static tvg_result_t tvg_parse_polyline(tvg_context_t* ctx, size_t size,
     if (res != TVG_SUCCESS) {
         return res;
     }
-    if (line_width == 0) {  // WTH?
+    if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_line_width(ctx->canvas, line_width);
@@ -930,7 +930,7 @@ static tvg_result_t tvg_parse_lines(tvg_context_t* ctx, size_t size,
     if (res != TVG_SUCCESS) {
         return res;
     }
-    if (line_width == 0) {  // WTH?
+    if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_line_width(ctx->canvas, line_width);
@@ -1041,7 +1041,7 @@ static tvg_result_t tvg_parse_line_fill_polyline(tvg_context_t* ctx, size_t size
     if (res != TVG_SUCCESS) {
         return res;
     }
-    if (line_width == 0) {  // WTH?
+    if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_line_width(ctx->canvas, line_width);
@@ -1060,7 +1060,7 @@ static tvg_result_t tvg_parse_line_fill_rectangles(tvg_context_t* ctx,
     size_t szb = count * sizeof(tvg_rect_t);
     tvg_result_t res;
     tvg_point_t pt;
-    if (line_width == 0) {  // WTH?
+    if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_fill_rule(ctx->canvas, PLUTOVG_FILL_RULE_EVEN_ODD);
@@ -1122,7 +1122,7 @@ static tvg_result_t tvg_parse_line_fill_paths(tvg_context_t* ctx, size_t size,
     if (res != TVG_SUCCESS) {
         goto error;
     }
-    if (line_width == 0) {  // WTH?
+    if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_line_width(ctx->canvas, line_width);
