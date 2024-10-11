@@ -656,30 +656,6 @@ static tvg_result_t tvg_parse_line_header(tvg_context_t* ctx, int kind,
     return TVG_SUCCESS;
 }
 
-static tvg_result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
-                                          const tvg_style_t* fill_style) {
-    size_t count = size;
-    size_t szb = count * sizeof(tvg_rect_t);
-    tvg_result_t res;
-    tvg_point_t pt;
-    plutovg_canvas_set_fill_rule(ctx->canvas, PLUTOVG_FILL_RULE_EVEN_ODD);
-    plutovg_canvas_set_opacity(ctx->canvas, 1.0);
-    res = tvg_apply_style(ctx, fill_style);
-    if (res != TVG_SUCCESS) return res;
-    while (count--) {
-        res = tvg_read_point(ctx, &pt);
-        if (res != TVG_SUCCESS) return res;
-        float w, h;
-        res = tvg_read_unit(ctx, &w);
-        if (res != TVG_SUCCESS) return res;
-        res = tvg_read_unit(ctx, &h);
-        if (res != TVG_SUCCESS) return res;
-        plutovg_canvas_rect(ctx->canvas, pt.x, pt.y, w, h);
-        plutovg_canvas_fill(ctx->canvas);
-    }
-    return TVG_SUCCESS;
-}
-
 static tvg_result_t tvg_parse_line_fill_header(
     tvg_context_t* ctx, int kind, tvg_line_fill_header_t* out_header) {
     uint32_t u32;
@@ -854,6 +830,30 @@ static tvg_result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
     }
 error:
     return res;
+}
+
+static tvg_result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
+                                          const tvg_style_t* fill_style) {
+    size_t count = size;
+    size_t szb = count * sizeof(tvg_rect_t);
+    tvg_result_t res;
+    tvg_point_t pt;
+    plutovg_canvas_set_fill_rule(ctx->canvas, PLUTOVG_FILL_RULE_EVEN_ODD);
+    plutovg_canvas_set_opacity(ctx->canvas, 1.0);
+    res = tvg_apply_style(ctx, fill_style);
+    if (res != TVG_SUCCESS) return res;
+    while (count--) {
+        res = tvg_read_point(ctx, &pt);
+        if (res != TVG_SUCCESS) return res;
+        float w, h;
+        res = tvg_read_unit(ctx, &w);
+        if (res != TVG_SUCCESS) return res;
+        res = tvg_read_unit(ctx, &h);
+        if (res != TVG_SUCCESS) return res;
+        plutovg_canvas_rect(ctx->canvas, pt.x, pt.y, w, h);
+        plutovg_canvas_fill(ctx->canvas);
+    }
+    return TVG_SUCCESS;
 }
 
 static tvg_result_t tvg_parse_fill_polygon(tvg_context_t* ctx, size_t size,
