@@ -1284,6 +1284,7 @@ static tvg_result_t tvg_parse_commands(tvg_context_t* ctx) {
 extern tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_state,
                                         uint32_t* out_width,
                                         uint32_t* out_height) {
+    // initialize the context
     tvg_context_t ctx;
     if (inp == NULL) {
         return TVG_E_INVALID_ARG;
@@ -1292,6 +1293,7 @@ extern tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_stat
     ctx.inp_state = inp_state;
     ctx.colors = NULL;
     ctx.colors_size = 0;
+    // parse the header, early outing before the color table
     tvg_result_t res = tvg_parse_header(&ctx, 1);
     if (res != TVG_SUCCESS) {
         return res;
@@ -1304,6 +1306,7 @@ extern tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_stat
 extern tvg_result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
                                     plutovg_canvas_t* canvas,
                                     const plutovg_rect_t* bounds) {
+    // initialize the context
     tvg_context_t ctx;
     if (inp == NULL) {
         return TVG_E_INVALID_ARG;
@@ -1313,10 +1316,12 @@ extern tvg_result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
     ctx.canvas = canvas;
     ctx.colors = NULL;
     ctx.colors_size = 0;
+    // parse the header
     tvg_result_t res = tvg_parse_header(&ctx, 0);
     if (res != TVG_SUCCESS) {
         goto error;
     }
+    // compute the final scaling
     float scale_x = bounds->w / ctx.width;
     float scale_y = bounds->h / ctx.height;
     plutovg_matrix_t m;
