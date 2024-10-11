@@ -1320,6 +1320,7 @@ extern tvg_result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
     float scale_x = bounds->w / ctx.width;
     float scale_y = bounds->h / ctx.height;
     plutovg_matrix_t m;
+    // scale and translate to fit the document to the bounds
     plutovg_matrix_init_scale(&m, scale_x, scale_y);
     plutovg_matrix_translate(&m, bounds->x / scale_x, bounds->y / scale_y);
     plutovg_canvas_set_matrix(ctx.canvas, &m);
@@ -1337,27 +1338,34 @@ error:
     return res;
 }
 
+// read from a FILE object
 static size_t inp_func(uint8_t* data, size_t to_read, void* state) {
     FILE* f = (FILE*)state;
     return fread(data, 1, to_read, f);
 }
 
 int main(int argc, char* argv[]) {
+    // scaling factor:
     float scale = 1.f;
+    // files
     const char* input = "..\\..\\everything-32.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input, "rb");
+    // get the dimensions of the document:
     uint32_t w, h;
     tvg_result_t res = tvg_document_dimensions(inp_func, inp_file, &w, &h);
     if (res != TVG_SUCCESS) {
         fprintf(stderr, "Unable to parse '%s'\n", input);
         return 1;
     }
-
+    // start at the beginning again
+    fseek(inp_file, 0, SEEK_SET);
+    // create a plutovg surface of the final document size after scaling
     plutovg_surface_t* surface =
         plutovg_surface_create((int)(w * scale), (int)(h * scale));
-    fseek(inp_file, 0, SEEK_SET);
+    // create the canvas
     plutovg_canvas_t* canvas = plutovg_canvas_create(surface);
+    // create the final destination rectangle
     plutovg_rect_t r = {0.f, 0.f, w * scale, h * scale};
     res = tvg_render_document(inp_func, inp_file, canvas, &r);
     if (res != TVG_SUCCESS) {
