@@ -229,8 +229,10 @@ typedef struct {
 typedef struct {
     uint8_t kind;
     uint32_t flat;  // color index
-    tvg_gradient_t linear;
-    tvg_gradient_t radial;
+    union { 
+        tvg_gradient_t linear;
+        tvg_gradient_t radial;
+    };
 } tvg_style_t;
 
 // fill header
