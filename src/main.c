@@ -141,11 +141,11 @@ enum {
 // clamp a value to a range
 #define TVG_CLAMP(x, mn, mx) (x > mx ? mx : (x < mn ? mn : x))
 // get the red channel of an RGB565 color
-#define TVG_RGB16_R(x) (x & 0x1F)
+#define TVG_RGB16_R(x) (x & 15)
 // get the green channel of an RGB565 color
-#define TVG_RGB16_G(x) ((x >> 5) & 0x3F)
+#define TVG_RGB16_G(x) ((x >> 5) & 31)
 // get the blue channel of an RGB565 color
-#define TVG_RGB16_B(x) ((x >> 11) & 0x1F)
+#define TVG_RGB16_B(x) ((x >> 11) & 15)
 // get the index of the command
 // essentially the command id
 #define TVG_CMD_INDEX(x) (x & 0x3F)
@@ -1360,7 +1360,7 @@ int main(int argc, char* argv[]) {
     // scaling factor:
     float scale = 1.f;
     // files
-    const char* input = "..\\..\\everything-32.tvg";
+    const char* input = "..\\..\\tiger.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input, "rb");
     // get the dimensions of the document:
