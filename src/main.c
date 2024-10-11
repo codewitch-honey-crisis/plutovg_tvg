@@ -141,11 +141,11 @@ enum {
 // clamp a value to a range
 #define TVG_CLAMP(x, mn, mx) (x > mx ? mx : (x < mn ? mn : x))
 // get the red channel of an RGB565 color
-#define TVG_RGB16_R(x) (x & 15)
+#define TVG_RGB16_R(x) (x & 0x1F)
 // get the green channel of an RGB565 color
-#define TVG_RGB16_G(x) ((x >> 5) & 31)
+#define TVG_RGB16_G(x) ((x >> 5) & 0x3F)
 // get the blue channel of an RGB565 color
-#define TVG_RGB16_B(x) ((x >> 11) & 15)
+#define TVG_RGB16_B(x) ((x >> 11) & 0x1F)
 // get the index of the command
 // essentially the command id
 #define TVG_CMD_INDEX(x) (x & 0x3F)
