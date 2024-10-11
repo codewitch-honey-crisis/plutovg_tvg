@@ -400,7 +400,7 @@ static uint32_t tvg_upscale_coord(tvg_context_t* ctx, uint32_t coord) {
     ;
 }
 
-static tvg_result_t tvg_read_u32(tvg_context_t* ctx, uint32_t* out_value) {
+static tvg_result_t tvg_read_varuint(tvg_context_t* ctx, uint32_t* out_value) {
     int count = 0;
     uint32_t result = 0;
     uint8_t byte;
@@ -478,7 +478,7 @@ static tvg_result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
         return TVG_SUCCESS;
     }
     uint32_t color_count;
-    res = tvg_read_u32(ctx, &color_count);
+    res = tvg_read_varuint(ctx, &color_count);
     if (res != TVG_SUCCESS) {
         return res;
     }
@@ -515,7 +515,7 @@ static tvg_result_t tvg_parse_gradient(tvg_context_t* ctx,
         return res;
     }
     out_gradient->point1 = pt;
-    res = tvg_read_u32(ctx, &u32);
+    res = tvg_read_varuint(ctx, &u32);
     if (res != TVG_SUCCESS) {
         return res;
     }
@@ -523,7 +523,7 @@ static tvg_result_t tvg_parse_gradient(tvg_context_t* ctx,
     if (u32 > ctx->colors_size) {
         return TVG_E_INVALID_FORMAT;
     }
-    res = tvg_read_u32(ctx, &u32);
+    res = tvg_read_varuint(ctx, &u32);
     if (res != TVG_SUCCESS) {
         return res;
     }
@@ -542,7 +542,7 @@ static tvg_result_t tvg_parse_style(tvg_context_t* ctx, int kind,
     out_style->kind = kind;
     switch (kind) {
         case TVG_STYLE_FLAT:
-            res = tvg_read_u32(ctx, &flat);
+            res = tvg_read_varuint(ctx, &flat);
             if (res != TVG_SUCCESS) {
                 return res;
             }
@@ -569,7 +569,7 @@ static tvg_result_t tvg_parse_style(tvg_context_t* ctx, int kind,
 static tvg_result_t tvg_parse_fill_header(tvg_context_t* ctx, int kind,
                                       tvg_fill_header_t* out_header) {
     uint32_t u32;
-    tvg_result_t res = tvg_read_u32(ctx, &u32);
+    tvg_result_t res = tvg_read_varuint(ctx, &u32);
     if (res != TVG_SUCCESS) {
         return res;
     }
@@ -683,7 +683,7 @@ static tvg_result_t tvg_parse_fill_polygon(tvg_context_t* ctx, size_t size,
 static tvg_result_t tvg_parse_line_header(tvg_context_t* ctx, int kind,
                                       tvg_line_header_t* out_header) {
     uint32_t u32;
-    tvg_result_t res = tvg_read_u32(ctx, &u32);
+    tvg_result_t res = tvg_read_varuint(ctx, &u32);
     if (res != TVG_SUCCESS) {
         return res;
     }
@@ -951,7 +951,7 @@ static tvg_result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size,
     plutovg_canvas_set_opacity(ctx->canvas, 1.0);
     plutovg_canvas_set_rgb(ctx->canvas, 0, 0, 0);
     for (size_t i = 0; i < size; ++i) {
-        res = tvg_read_u32(ctx, &sizes[i]);
+        res = tvg_read_varuint(ctx, &sizes[i]);
         ++sizes[i];
         if (res != TVG_SUCCESS) {
             goto error;
@@ -988,7 +988,7 @@ static tvg_result_t tvg_parse_line_paths(tvg_context_t* ctx, size_t size,
     plutovg_canvas_set_rgb(ctx->canvas, 0, 0, 0);
 
     for (size_t i = 0; i < size; ++i) {
-        res = tvg_read_u32(ctx, &sizes[i]);
+        res = tvg_read_varuint(ctx, &sizes[i]);
         ++sizes[i];
         if (res != TVG_SUCCESS) {
             goto error;
@@ -1098,7 +1098,7 @@ static tvg_result_t tvg_parse_line_fill_paths(tvg_context_t* ctx, size_t size,
         return TVG_E_OUT_OF_MEMORY;
     }
     for (size_t i = 0; i < size; ++i) {
-        res = tvg_read_u32(ctx, &sizes[i]);
+        res = tvg_read_varuint(ctx, &sizes[i]);
         ++sizes[i];
         if (res != TVG_SUCCESS) {
             free(sizes);
