@@ -283,6 +283,7 @@ static uint32_t tvg_map_zero_to_max(tvg_context_t* ctx, uint32_t value) {
     }
     return value;
 }
+
 static result_t tvg_read_coord(tvg_context_t* ctx, uint32_t* out_raw_value) {
     size_t read;
     switch (ctx->coord_range) {
@@ -313,6 +314,7 @@ static result_t tvg_read_coord(tvg_context_t* ctx, uint32_t* out_raw_value) {
             return TVG_SUCCESS;
     }
 }
+
 static result_t tvg_read_color(tvg_context_t* ctx, tvg_rgba_t* out_color) {
     size_t read;
     switch (ctx->color_encoding) {
@@ -375,11 +377,13 @@ static float tvg_downscale_coord(tvg_context_t* ctx, uint32_t coord) {
     uint16_t factor = (((uint16_t)1) << ctx->scale);
     return (float)coord / (float)factor;
 }
+
 static uint32_t tvg_upscale_coord(tvg_context_t* ctx, uint32_t coord) {
     uint16_t factor = (((uint16_t)1) << ctx->scale);
     return (uint32_t)((float)coord * (float)factor) + 0.5f;
     ;
 }
+
 static result_t tvg_read_u32(tvg_context_t* ctx, uint32_t* out_value) {
     int count = 0;
     uint32_t result = 0;
@@ -396,6 +400,7 @@ static result_t tvg_read_u32(tvg_context_t* ctx, uint32_t* out_value) {
     *out_value = result;
     return TVG_SUCCESS;
 }
+
 static result_t tvg_read_unit(tvg_context_t* ctx, float* out_value) {
     uint32_t val;
     result_t res = tvg_read_coord(ctx, &val);
@@ -479,6 +484,7 @@ static result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     }
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_gradient(tvg_context_t* ctx,
                                    tvg_gradient_t* out_gradient) {
     uint32_t u32;
@@ -511,6 +517,7 @@ static result_t tvg_parse_gradient(tvg_context_t* ctx,
     out_gradient->color1 = u32;
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_style(tvg_context_t* ctx, int kind,
                                 tvg_style_t* out_style) {
     result_t res;
@@ -564,11 +571,13 @@ static float tvg_distance(const tvg_point_t* lhs, const tvg_point_t* rhs) {
     float yd = rhs->y - lhs->y;
     return sqrtf((xd * xd) + (yd * yd));
 }
+
 static plutovg_color_t tvg_color_to_plutovg(const tvg_rgba_t* col) {
     plutovg_color_t result;
     plutovg_color_init_rgba(&result, col->r, col->g, col->b, col->a);
     return result;
 }
+
 static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
     plutovg_color_t col;
     float r;
@@ -609,6 +618,7 @@ static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
     }
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
                                           const tvg_style_t* fill_style) {
     size_t count = size;
@@ -632,6 +642,7 @@ static result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
     }
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_fill_polygon(tvg_context_t* ctx, size_t size,
                                        const tvg_style_t* fill_style) {
     size_t count = size;
@@ -652,6 +663,7 @@ static result_t tvg_parse_fill_polygon(tvg_context_t* ctx, size_t size,
     plutovg_canvas_fill(ctx->cvs);
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_line_header(tvg_context_t* ctx, int kind,
                                       tvg_line_header_t* out_header) {
     uint32_t u32;
@@ -672,6 +684,7 @@ static result_t tvg_parse_line_header(tvg_context_t* ctx, int kind,
 
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_outline_fill_header(
     tvg_context_t* ctx, int kind, tvg_outline_fill_header_t* out_header) {
     uint32_t u32;
@@ -699,6 +712,7 @@ static result_t tvg_parse_outline_fill_header(
 
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
     result_t res = TVG_SUCCESS;
     tvg_point_t st, cur;
@@ -846,6 +860,7 @@ static result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
 error:
     return res;
 }
+
 static result_t tvg_parse_polyline(tvg_context_t* ctx, size_t size,
                                    const tvg_style_t* line_style,
                                    float line_width, bool close) {
@@ -877,6 +892,7 @@ static result_t tvg_parse_polyline(tvg_context_t* ctx, size_t size,
     plutovg_canvas_stroke(ctx->cvs);
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_lines(tvg_context_t* ctx, size_t size,
                                 const tvg_style_t* line_style,
                                 float line_width) {
@@ -906,6 +922,7 @@ static result_t tvg_parse_lines(tvg_context_t* ctx, size_t size,
     plutovg_canvas_stroke(ctx->cvs);
     return TVG_SUCCESS;
 }
+
 static result_t tvg_parse_fill_paths(tvg_context_t* ctx, size_t size,
                                      const tvg_style_t* style) {
     result_t res = TVG_SUCCESS;
@@ -941,6 +958,7 @@ error:
     free(sizes);
     return res;
 }
+
 static result_t tvg_parse_line_paths(tvg_context_t* ctx, size_t size,
                                      const tvg_style_t* line_style,
                                      float line_width) {
@@ -977,6 +995,7 @@ error:
     free(sizes);
     return res;
 }
+
 static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size,
                                                 const tvg_style_t* fill_style,
                                                 const tvg_style_t* line_style,
@@ -1015,6 +1034,7 @@ static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size,
 
     return res;
 }
+
 static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,
                                                   size_t size,
                                                   const tvg_style_t* fill_style,
@@ -1244,6 +1264,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
     }
     return TVG_SUCCESS;
 }
+
 static result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_state,
                                         uint32_t* out_width,
                                         uint32_t* out_height) {
@@ -1263,6 +1284,7 @@ static result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_state,
     *out_height = ctx.height;
     return res;
 }
+
 static result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
                                     plutovg_canvas_t* canvas,
                                     const plutovg_rect_t* bounds) {
@@ -1303,6 +1325,7 @@ size_t inp_func(uint8_t* data, size_t to_read, void* state) {
     FILE* f = (FILE*)state;
     return fread(data, 1, to_read, f);
 }
+
 int main(int argc, char* argv[]) {
     float scale = 1.f;
     const char* input = "..\\..\\everything-32.tvg";
