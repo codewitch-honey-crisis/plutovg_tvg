@@ -179,6 +179,14 @@ typedef struct {
     float r, g, b, a;
 } tvg_f32_pixel_t;
 
+// rgba32 color struct
+typedef struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+} tvg_rgba32_t;
+
 // TVG internal color struct
 typedef struct {
     float r;
@@ -194,14 +202,6 @@ typedef struct {
     float b;
     float a;
 } tvg_rgba_t;
-
-// rgba32 color struct
-typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
-} tvg_rgba32_t;
 
 // coordinate
 typedef struct {
