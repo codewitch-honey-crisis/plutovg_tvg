@@ -4,8 +4,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <plutovg.h>
-#define TVG_PI (3.1415926536f)
-#define TVG_CLAMP(x,mn,mx) (x>mx?mx:(x<mn?mn:x))
 enum {
     TVG_CMD_END_DOCUMENT = 0, // end of document This command determines the end of file.
     TVG_CMD_FILL_POLYGON, // fill polygon This command fills an N-gon.
@@ -104,9 +102,8 @@ enum {
     TVG_E_NOT_SUPPORTED
 };
 
-typedef struct {
-    float r,g,b,a;
-} tvg_f32_pixel_t;
+#define TVG_PI (3.1415926536f)
+#define TVG_CLAMP(x,mn,mx) (x>mx?mx:(x<mn?mn:x))
 
 #define TVG_RGB16_R(x) (x&0x1F)
 #define TVG_RGB16_G(x) ((x>>5)&0x3F)
@@ -127,6 +124,10 @@ typedef struct {
 
 #define TVG_ARC_LARGE(x) (x&0x1)
 #define TVG_ARC_SWEEP(x) ((x>>1)&1)
+
+typedef struct {
+    float r,g,b,a;
+} tvg_f32_pixel_t;
 
 typedef struct {
     float r;
