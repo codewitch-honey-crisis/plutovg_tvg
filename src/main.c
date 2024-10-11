@@ -1360,7 +1360,7 @@ int main(int argc, char* argv[]) {
     // scaling factor:
     float scale = 1.f;
     // files
-    const char* input = "..\\..\\tiger.tvg";
+    const char* input = "..\\..\\everything-32.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input, "rb");
     // get the dimensions of the document:
