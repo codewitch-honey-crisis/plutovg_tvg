@@ -171,16 +171,20 @@ enum {
 // 0=left, 1=right
 #define TVG_ARC_SWEEP(x) ((x>>1)&1)
 
+// F32 pixel format
 typedef struct {
     float r,g,b,a;
 } tvg_f32_pixel_t;
 
+// TVG internal color struct
 typedef struct {
     float r;
     float g;
     float b;
 } tvg_rgb_t;
 
+// TVG internal color struct
+// with alpha channel
 typedef struct {
     float r;
     float g;
@@ -188,6 +192,7 @@ typedef struct {
     float a;
 } tvg_rgba_t;
 
+// rgba32 color struct
 typedef struct {
     uint8_t r;
     uint8_t g;
@@ -195,11 +200,13 @@ typedef struct {
     uint8_t a;
 } tvg_rgba32_t;
 
+// coordinate
 typedef struct {
     float x;
     float y;
 } tvg_point_t;
 
+// rectangle
 typedef struct {
     float x;
     float y;
@@ -207,6 +214,7 @@ typedef struct {
     float height;
 } tvg_rect_t;
 
+// gradient data
 typedef struct {
     tvg_point_t point0;
     tvg_point_t point1;
@@ -214,6 +222,7 @@ typedef struct {
     uint32_t color1;
 } tvg_gradient_t;
 
+// style data
 typedef struct {
     uint8_t kind;
     uint32_t flat; // color index
@@ -221,40 +230,27 @@ typedef struct {
     tvg_gradient_t radial;
 } tvg_style_t;
 
+// fill header
 typedef struct {
     tvg_style_t style;
     size_t size;
+} tvg_fill_header_t;
 
-} tvg_fill_polygon_t;
-
-typedef struct {
-    tvg_style_t style;
-    size_t size;
-}  tvg_fill_rectangles_t;
-
-typedef struct {
-    tvg_style_t style;
-    size_t size;
-} tvg_fill_path_t;
-
+// line header
 typedef struct {
     tvg_style_t style;
     float line_width;
     size_t size;
-} tvg_line_path_t;
+} tvg_line_header_t;
 
+// outline and fill header
 typedef struct {
     tvg_style_t fill_style;
     tvg_style_t line_style;
     float line_width;
     size_t size;
-} tvg_outline_fill_t;
+} tvg_outline_fill_header_t;
 
-typedef struct {
-    tvg_style_t style;
-    float line_width;
-    size_t size;
-} tvg_lines_t;
 
 typedef size_t(*tvg_input_func_t)(uint8_t* data, size_t size, void* state);
 
@@ -529,7 +525,8 @@ static result_t tvg_parse_style(tvg_context_t* ctx,int kind, tvg_style_t* out_st
     }
     return res;
 }
-static result_t tvg_parse_fill_rectangles_header(tvg_context_t* ctx,int kind,tvg_fill_rectangles_t* out_header) {
+
+static result_t tvg_parse_fill_header(tvg_context_t* ctx,int kind,tvg_fill_header_t* out_header) {
     uint32_t u32;
     result_t res = tvg_read_u32(ctx,&u32);
     if(res!=TVG_SUCCESS) {
@@ -543,21 +540,7 @@ static result_t tvg_parse_fill_rectangles_header(tvg_context_t* ctx,int kind,tvg
     }
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_fill_path_header(tvg_context_t* ctx,int kind,tvg_fill_path_t* out_header) {
-    uint32_t u32;
-    result_t res = tvg_read_u32(ctx,&u32);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    size_t count = (size_t)u32+ 1;
-    out_header->size = count;
-    res = tvg_parse_style(ctx,kind,&out_header->style);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    return TVG_SUCCESS;
-}
-static result_t tvg_parse_line_path_header(tvg_context_t* ctx,int kind,tvg_line_path_t* out_header) {
+static result_t tvg_parse_line_path_header(tvg_context_t* ctx,int kind,tvg_line_header_t* out_header) {
     uint32_t u32;
     result_t res = tvg_read_u32(ctx,&u32);
     if(res!=TVG_SUCCESS) {
@@ -576,20 +559,6 @@ static result_t tvg_parse_line_path_header(tvg_context_t* ctx,int kind,tvg_line_
     return TVG_SUCCESS;
 }
 
-static result_t tvg_parse_fill_poly_header(tvg_context_t* ctx,int kind,tvg_fill_polygon_t* out_header) {
-    uint32_t u32;
-    result_t res = tvg_read_u32(ctx,&u32);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    size_t count = (size_t)u32+ 1;
-    out_header->size = count;
-    res = tvg_parse_style(ctx,kind,&out_header->style);
-    if(res!=TVG_SUCCESS) {
-        return res;
-    }
-    return TVG_SUCCESS;
-}
 static float tvg_distance(const tvg_point_t* lhs,const tvg_point_t* rhs) {
     float xd = rhs->x-lhs->x;
     float yd = rhs->y-lhs->y;
@@ -700,7 +669,7 @@ static result_t tvg_parse_fill_polygon(tvg_context_t* ctx,size_t size, const tvg
     plutovg_canvas_fill(ctx->cvs);
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_lines_header(tvg_context_t* ctx,int kind,tvg_lines_t* out_header) {
+static result_t tvg_parse_line_header(tvg_context_t* ctx,int kind,tvg_line_header_t* out_header) {
     uint32_t u32;
     result_t res = tvg_read_u32(ctx,&u32);
     if(res!=TVG_SUCCESS) {
@@ -719,7 +688,7 @@ static result_t tvg_parse_lines_header(tvg_context_t* ctx,int kind,tvg_lines_t* 
     
     return TVG_SUCCESS;
 }
-static result_t tvg_parse_outline_fill_header(tvg_context_t* ctx,int kind,tvg_outline_fill_t* out_header) {
+static result_t tvg_parse_outline_fill_header(tvg_context_t* ctx,int kind,tvg_outline_fill_header_t* out_header) {
     uint32_t u32;
     uint8_t d;
     if(1>ctx->inp(&d,1,ctx->inp_state)) {
@@ -1137,8 +1106,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             case TVG_CMD_END_DOCUMENT:
                 break;
             case TVG_CMD_FILL_POLYGON: {
-                tvg_fill_polygon_t data;
-                res=tvg_parse_fill_poly_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_fill_header_t data;
+                res=tvg_parse_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1149,8 +1118,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_FILL_RECTANGLES: {
-                tvg_fill_rectangles_t data;
-                res=tvg_parse_fill_rectangles_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_fill_header_t data;
+                res=tvg_parse_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1161,8 +1130,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_FILL_PATH: {
-                tvg_fill_path_t data;
-                res = tvg_parse_fill_path_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_fill_header_t data;
+                res = tvg_parse_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1173,8 +1142,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_DRAW_LINES: {
-                tvg_lines_t data;
-                res=tvg_parse_lines_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_line_header_t data;
+                res=tvg_parse_line_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1185,8 +1154,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_DRAW_LINE_LOOP: {
-                tvg_lines_t data;
-                res=tvg_parse_lines_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_line_header_t data;
+                res=tvg_parse_line_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1197,8 +1166,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_DRAW_LINE_STRIP: {
-                tvg_lines_t data;
-                res=tvg_parse_lines_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_line_header_t data;
+                res=tvg_parse_line_header (ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1209,8 +1178,8 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_DRAW_LINE_PATH: {
-                tvg_line_path_t data;
-                res = tvg_parse_line_path_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
+                tvg_line_header_t data;
+                res = tvg_parse_line_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
                 }
@@ -1221,7 +1190,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_OUTLINE_FILL_POLYGON: {
-                tvg_outline_fill_t data;
+                tvg_outline_fill_header_t data;
                 res = tvg_parse_outline_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
@@ -1233,7 +1202,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
             }
             break;
             case TVG_CMD_OUTLINE_FILL_RECTANGLES:
-                tvg_outline_fill_t data;
+                tvg_outline_fill_header_t data;
                 res = tvg_parse_outline_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
@@ -1244,7 +1213,7 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
                 break;
             case TVG_CMD_OUTLINE_FILL_PATH: {
-                tvg_outline_fill_t data;
+                tvg_outline_fill_header_t data;
                 res = tvg_parse_outline_fill_header(ctx,TVG_CMD_STYLE_KIND(cmd),&data);
                 if(res!=TVG_SUCCESS) {
                     return res;
@@ -1321,7 +1290,7 @@ size_t inp_func(uint8_t* data,size_t to_read, void* state) {
 int main(int argc, char* argv[])
 {
     float scale = 1.f;
-    const char* input = "..\\..\\chart.tvg";
+    const char* input = "..\\..\\everything-32.tvg";
     const char* output = "..\\..\\output.png";
     FILE* inp_file = fopen(input,"rb");
     uint32_t w,h;
