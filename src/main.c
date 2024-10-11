@@ -438,25 +438,30 @@ static tvg_result_t tvg_read_point(tvg_context_t* ctx, tvg_point_t* out_point) {
 
 static tvg_result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     uint8_t data[2];
-
+    // read the magic number
     if (2 > ctx->inp((uint8_t*)data, 2, ctx->inp_state)) {
         return TVG_E_IO_ERROR;
     }
     if (data[0] != 0x72 || data[1] != 0x56) {
         return TVG_E_INVALID_FORMAT;
     }
+    // read the version
     if (1 > ctx->inp(data, 1, ctx->inp_state)) {
         return TVG_E_IO_ERROR;
     }
+    // we only support version 1
     if (data[0] != 1) {
         return TVG_E_NOT_SUPPORTED;
     }
+    // read the scale, encoding, and coordinate range:
     if (1 > ctx->inp(data, 1, ctx->inp_state)) {
         return TVG_E_IO_ERROR;
     }
+    // it's all packed in a byte, so crack it up
     ctx->scale = TVG_HEADER_DATA_SCALE(data[0]);
     ctx->color_encoding = TVG_HEADER_DATA_COLOR_ENC(data[0]);
     ctx->coord_range = TVG_HEADER_DATA_RANGE(data[0]);
+    // now read the width and height:
     uint32_t tmp;
     tvg_result_t res = tvg_read_coord(ctx, &tmp);
     if (res != TVG_SUCCESS) {
@@ -471,6 +476,7 @@ static tvg_result_t tvg_parse_header(tvg_context_t* ctx, int dim_only) {
     if (dim_only) {
         return TVG_SUCCESS;
     }
+    // next read the color table
     uint32_t color_count;
     res = tvg_read_varuint(ctx, &color_count);
     if (res != TVG_SUCCESS) {
