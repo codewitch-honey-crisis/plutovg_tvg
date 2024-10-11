@@ -248,13 +248,13 @@ typedef struct {
     size_t size;
 } tvg_line_header_t;
 
-// outline and fill header
+// line and fill header
 typedef struct {
     tvg_style_t fill_style;
     tvg_style_t line_style;
     float line_width;
     size_t size;
-} tvg_outline_fill_header_t;
+} tvg_line_fill_header_t;
 
 typedef size_t (*tvg_input_func_t)(uint8_t* data, size_t size, void* state);
 
@@ -687,8 +687,8 @@ static result_t tvg_parse_line_header(tvg_context_t* ctx, int kind,
     return TVG_SUCCESS;
 }
 
-static result_t tvg_parse_outline_fill_header(
-    tvg_context_t* ctx, int kind, tvg_outline_fill_header_t* out_header) {
+static result_t tvg_parse_line_fill_header(
+    tvg_context_t* ctx, int kind, tvg_line_fill_header_t* out_header) {
     uint32_t u32;
     uint8_t d;
     if (1 > ctx->inp(&d, 1, ctx->inp_state)) {
@@ -998,7 +998,7 @@ error:
     return res;
 }
 
-static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size,
+static result_t tvg_parse_line_fill_polyline(tvg_context_t* ctx, size_t size,
                                                 const tvg_style_t* fill_style,
                                                 const tvg_style_t* line_style,
                                                 float line_width, bool close) {
@@ -1037,7 +1037,7 @@ static result_t tvg_parse_outline_fill_polyline(tvg_context_t* ctx, size_t size,
     return res;
 }
 
-static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,
+static result_t tvg_parse_line_fill_rectangles(tvg_context_t* ctx,
                                                   size_t size,
                                                   const tvg_style_t* fill_style,
                                                   const tvg_style_t* line_style,
@@ -1072,7 +1072,7 @@ static result_t tvg_parse_outline_fill_rectangles(tvg_context_t* ctx,
     return TVG_SUCCESS;
 }
 
-static result_t tvg_parse_outline_fill_paths(tvg_context_t* ctx, size_t size,
+static result_t tvg_parse_line_fill_paths(tvg_context_t* ctx, size_t size,
                                              const tvg_style_t* fill_style,
                                              const tvg_style_t* line_style,
                                              float line_width) {
@@ -1218,13 +1218,13 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
             } break;
             case TVG_CMD_OUTLINE_FILL_POLYGON: {
-                tvg_outline_fill_header_t data;
-                res = tvg_parse_outline_fill_header(
+                tvg_line_fill_header_t data;
+                res = tvg_parse_line_fill_header(
                     ctx, TVG_CMD_STYLE_KIND(cmd), &data);
                 if (res != TVG_SUCCESS) {
                     return res;
                 }
-                res = tvg_parse_outline_fill_polyline(
+                res = tvg_parse_line_fill_polyline(
                     ctx, data.size, &data.fill_style, &data.line_style,
                     data.line_width, true);
                 if (res != TVG_SUCCESS) {
@@ -1232,13 +1232,13 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
             } break;
             case TVG_CMD_OUTLINE_FILL_RECTANGLES:
-                tvg_outline_fill_header_t data;
-                res = tvg_parse_outline_fill_header(
+                tvg_line_fill_header_t data;
+                res = tvg_parse_line_fill_header(
                     ctx, TVG_CMD_STYLE_KIND(cmd), &data);
                 if (res != TVG_SUCCESS) {
                     return res;
                 }
-                res = tvg_parse_outline_fill_rectangles(
+                res = tvg_parse_line_fill_rectangles(
                     ctx, data.size, &data.fill_style, &data.line_style,
                     data.line_width);
                 if (res != TVG_SUCCESS) {
@@ -1246,13 +1246,13 @@ static result_t tvg_parse_commands(tvg_context_t* ctx) {
                 }
                 break;
             case TVG_CMD_OUTLINE_FILL_PATH: {
-                tvg_outline_fill_header_t data;
-                res = tvg_parse_outline_fill_header(
+                tvg_line_fill_header_t data;
+                res = tvg_parse_line_fill_header(
                     ctx, TVG_CMD_STYLE_KIND(cmd), &data);
                 if (res != TVG_SUCCESS) {
                     return res;
                 }
-                res = tvg_parse_outline_fill_paths(
+                res = tvg_parse_line_fill_paths(
                     ctx, data.size, &data.fill_style, &data.line_style,
                     data.line_width);
                 if (res != TVG_SUCCESS) {
