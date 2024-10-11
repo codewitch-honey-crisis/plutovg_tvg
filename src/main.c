@@ -5,21 +5,35 @@
 #include <stdio.h>
 #include <plutovg.h>
 enum {
-    TVG_CMD_END_DOCUMENT = 0, // end of document This command determines the end of file.
-    TVG_CMD_FILL_POLYGON, // fill polygon This command fills an N-gon.
-    TVG_CMD_FILL_RECTANGLES, // fill rectangles This command fills a set of rectangles.
-    TVG_CMD_FILL_PATH, // fill path This command fills a free-form path.
-    TVG_CMD_DRAW_LINES, // draw lines This command draws a set of lines.
-    TVG_CMD_DRAW_LINE_LOOP, // draw line loop This command draws the outline of a polygon.
-    TVG_CMD_DRAW_LINE_STRIP, // draw line strip This command draws a list of end-to-end lines.
-    TVG_CMD_DRAW_LINE_PATH, // draw line path This command draws a free-form path.
-    TVG_CMD_OUTLINE_FILL_POLYGON, // outline fill polygon This command draws a filled polygon with an outline.
-    TVG_CMD_OUTLINE_FILL_RECTANGLES, // outline fill rectangles This command draws several filled rectangles with an outline.
-    TVG_CMD_OUTLINE_FILL_PATH // outline fill path This command combines the fill and draw line path command into one
+    // end of document This command determines the end of file.
+    TVG_CMD_END_DOCUMENT = 0, 
+    // fill polygon This command fills an N-gon.
+    TVG_CMD_FILL_POLYGON, 
+    // fill rectangles This command fills a set of rectangles.
+    TVG_CMD_FILL_RECTANGLES, 
+    // fill path This command fills a free-form path.
+    TVG_CMD_FILL_PATH, 
+    // draw lines This command draws a set of lines.
+    TVG_CMD_DRAW_LINES, 
+    // draw line loop This command draws the outline of a polygon.
+    TVG_CMD_DRAW_LINE_LOOP, 
+    // draw line strip This command draws a list of end-to-end lines.
+    TVG_CMD_DRAW_LINE_STRIP,
+    // draw line path This command draws a free-form path. 
+    TVG_CMD_DRAW_LINE_PATH, 
+    // outline fill polygon This command draws a filled polygon with an outline.
+    TVG_CMD_OUTLINE_FILL_POLYGON, 
+    // outline fill rectangles This command draws several filled rectangles with an outline.
+    TVG_CMD_OUTLINE_FILL_RECTANGLES, 
+    // outline fill path This command combines the fill and draw line path command into one
+    TVG_CMD_OUTLINE_FILL_PATH 
 };
 enum {
+    // solid color
     TVG_STYLE_FLAT = 0,
+    // linear gradient
     TVG_STYLE_LINEAR,
+    // radial gradient
     TVG_STYLE_RADIAL
 };
 enum {
@@ -31,22 +45,36 @@ enum {
     TVG_RANGE_ENHANCED,
 };
 
-/// The color encoding used in a TinyVG file. This enum describes how the data in the color table section of the format looks like.
+/// The color encoding used in a TinyVG file. 
+// This enum describes how the data in the color table 
+//section of the format looks like.
 enum {
     // A classic 4-tuple with 8 bit unsigned channels.
-    // Encodes red, green, blue and alpha. If not specified otherwise (via external means) the color channels encode sRGB color data
-    // and the alpha stores linear transparency.
+    // Encodes red, green, blue and alpha. If not specified 
+    // otherwise (via external means) the color channels encode
+    // sRGB color data and the alpha stores linear transparency.
     TVG_COLOR_U8888 = 0,
-    // A 16 bit color format with 5 bit for red and blue, and 6 bit color depth for green channel.
-    // This format is typically used in embedded devices or cheaper displays. If not specified otherwise (via external means) the color channels encode sRGB color data.
+    // A 16 bit color format with 5 bit for red and blue, and 
+    // 6 bit color depth for green channel.
+    // This format is typically used in embedded devices or cheaper
+    // displays. If not specified otherwise (via external means) the
+    // color channels encode sRGB color data.
     TVG_COLOR_U565,
-    // A format with 16 byte per color and 4 channels. Each channel is encoded as a `binary32` IEEE 754 value.
-    // The first three channels encode color data, the fourth channel encodes linear alpha.
-    // If not specified otherwise (via external means) the color channels encode sRGB color data and the alpha stores linear transparency.
+    // A format with 16 byte per color and 4 channels. Each channel 
+    // is encoded as a `binary32` IEEE 754 value.
+    // The first three channels encode color data, the fourth
+    // channel encodes linear alpha.
+    // If not specified otherwise (via external means) the color 
+    // channels encode sRGB color data and the alpha stores linear 
+    // transparency.
     TVG_COLOR_F32,
-    // This format is specified by external means and is meant to signal that these files are *valid*, but it's not possible
-    // to decode them without external knowledge about the color encoding. This is meant for special cases where huge savings
-    // might be possible by not encoding any color information in the files itself or special device dependent color formats are required.
+    // This format is specified by external means and is meant to 
+    // signal that these files are *valid*, but it's not possible
+    // to decode them without external knowledge about the color 
+    // encoding. This is meant for special cases where huge savings
+    // might be possible by not encoding any color information in
+    // the files itself or special device dependent color formats 
+    // are required.
     //
     // Possible uses cases are:
     //
@@ -57,7 +85,9 @@ enum {
     // - Using RAL numbers for painting
     // - ...
     //
-    // **NOTE:** A conforming parser is allowed to reject any file with a custom color encoding, as these are meant to be parsed with a specific use case.
+    // **NOTE:** A conforming parser is allowed to reject any file with a 
+    // custom color encoding, as these are meant to be parsed with a
+    // specific use case.
     TVG_COLOR_CUSTOM,
 };
 
@@ -82,6 +112,7 @@ enum {
     TVG_SCALE_1_16384,
     TVG_SCALE_1_32768,
 };
+// path commands
 enum {
     TVG_PATH_LINE = 0,
     TVG_PATH_HLINE,
@@ -92,8 +123,9 @@ enum {
     TVG_PATH_CLOSE,
     TVG_PATH_QUAD
 };
+// error codes
 enum {
-    TVG_SUCCESS,
+    TVG_SUCCESS = 0,
     TVG_E_INVALID_ARG,
     TVG_E_INVALID_STATE,
     TVG_E_INVALID_FORMAT,
@@ -103,26 +135,40 @@ enum {
 };
 
 #define TVG_PI (3.1415926536f)
+// clamp a value to a range
 #define TVG_CLAMP(x,mn,mx) (x>mx?mx:(x<mn?mn:x))
-
+// get the red channel of an RGB565 color
 #define TVG_RGB16_R(x) (x&0x1F)
+// get the green channel of an RGB565 color
 #define TVG_RGB16_G(x) ((x>>5)&0x3F)
+// get the blue channel of an RGB565 color
 #define TVG_RGB16_B(x) ((x>>11)&0x1F)
-
+// get the index of the command
+// essentially the command id
 #define TVG_CMD_INDEX(x) (x&0x3F)
+// get the style kind flags in the command
 #define TVG_CMD_STYLE_KIND(x) ((x>>6)&0x3)
-
+// get the packed size out of the size
+// and style kind packed value
 #define TVG_SIZE_AND_STYLE_SIZE(x) ((x&0x3F)+1)
+// get the style kind out of the size
+// and style kind packed value
 #define TVG_SIZE_AND_STYLE_STYLE_KIND(x) ((x>>6)&0x3)
-
+// get the scale from the header
 #define TVG_HEADER_DATA_SCALE(x) (x&0x0F)
+// get the color encoding from the header
 #define TVG_HEADER_DATA_COLOR_ENC(x) ((x>>4)&0x03)
+// get the color range from the header
 #define TVG_HEADER_DATA_RANGE(x) ((x>>6)&0x03)
-
+// get the path command index/id
 #define TVG_PATH_CMD_INDEX(x) (x&0x7)
+// flag indicating the path has
+// line/stroke to it
 #define TVG_PATH_CMD_HAS_LINE(x) ((x>>4)&0x1)
-
+// flag indicating the arc is a large arc
 #define TVG_ARC_LARGE(x) (x&0x1)
+// flag indicating the sweep direction
+// 0=left, 1=right
 #define TVG_ARC_SWEEP(x) ((x>>1)&1)
 
 typedef struct {
