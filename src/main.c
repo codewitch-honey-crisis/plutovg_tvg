@@ -831,26 +831,35 @@ static tvg_result_t tvg_parse_path(tvg_context_t* ctx, size_t size) {
 error:
     return res;
 }
-
+static tvg_result_t tvg_parse_rect(tvg_context_t* ctx, tvg_rect_t* out_rect) {
+    tvg_point_t pt;
+    tvg_result_t res = tvg_read_point(ctx, &pt);
+    if (res != TVG_SUCCESS) return res;
+    float w, h;
+    res = tvg_read_unit(ctx, &w);
+    if (res != TVG_SUCCESS) return res;
+    res = tvg_read_unit(ctx, &h);
+    if (res != TVG_SUCCESS) return res;
+    out_rect->x = pt.x;
+    out_rect->y = pt.y;
+    out_rect->width = w;
+    out_rect->height = h;
+    return TVG_SUCCESS;
+}
 static tvg_result_t tvg_parse_fill_rectangles(tvg_context_t* ctx, size_t size,
                                           const tvg_style_t* fill_style) {
     size_t count = size;
     size_t szb = count * sizeof(tvg_rect_t);
     tvg_result_t res;
-    tvg_point_t pt;
+    tvg_rect_t r;
     plutovg_canvas_set_fill_rule(ctx->canvas, PLUTOVG_FILL_RULE_EVEN_ODD);
     plutovg_canvas_set_opacity(ctx->canvas, 1.0);
     res = tvg_apply_style(ctx, fill_style);
     if (res != TVG_SUCCESS) return res;
     while (count--) {
-        res = tvg_read_point(ctx, &pt);
+        res = tvg_parse_rect(ctx,&r);
         if (res != TVG_SUCCESS) return res;
-        float w, h;
-        res = tvg_read_unit(ctx, &w);
-        if (res != TVG_SUCCESS) return res;
-        res = tvg_read_unit(ctx, &h);
-        if (res != TVG_SUCCESS) return res;
-        plutovg_canvas_rect(ctx->canvas, pt.x, pt.y, w, h);
+        plutovg_canvas_rect(ctx->canvas, r.x, r.y, r.width, r.height);
         plutovg_canvas_fill(ctx->canvas);
     }
     return TVG_SUCCESS;
@@ -864,23 +873,18 @@ static tvg_result_t tvg_parse_line_fill_rectangles(tvg_context_t* ctx,
     size_t count = size;
     size_t szb = count * sizeof(tvg_rect_t);
     tvg_result_t res;
-    tvg_point_t pt;
+    tvg_rect_t r;
     if (line_width == 0) {  // 0 width is invalid
         line_width = .001;
     }
     plutovg_canvas_set_fill_rule(ctx->canvas, PLUTOVG_FILL_RULE_EVEN_ODD);
     plutovg_canvas_set_opacity(ctx->canvas, 1.0);
     while (count--) {
-        res = tvg_read_point(ctx, &pt);
-        if (res != TVG_SUCCESS) return res;
-        float w, h;
-        res = tvg_read_unit(ctx, &w);
-        if (res != TVG_SUCCESS) return res;
-        res = tvg_read_unit(ctx, &h);
+        res = tvg_parse_rect(ctx,&r);
         if (res != TVG_SUCCESS) return res;
         res = tvg_apply_style(ctx, fill_style);
         if (res != TVG_SUCCESS) return res;
-        plutovg_canvas_rect(ctx->canvas, pt.x, pt.y, w, h);
+        plutovg_canvas_rect(ctx->canvas, r.x, r.y, r.width, r.height);
         plutovg_canvas_fill_preserve(ctx->canvas);
         plutovg_canvas_set_line_width(ctx->canvas, line_width);
         res = tvg_apply_style(ctx, line_style);
