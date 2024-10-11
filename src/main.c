@@ -546,29 +546,25 @@ static float tvg_distance(const tvg_point_t* lhs,const tvg_point_t* rhs) {
     float yd = rhs->y-lhs->y;
     return sqrtf((xd*xd)+(yd*yd));
 }
+static plutovg_color_t tvg_color_to_plutovg(const tvg_rgba_t* col) {
+    plutovg_color_t result;
+    plutovg_color_init_rgba(&result,col->r,col->g,col->b,col->a);
+    return result;
+}
 static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
     plutovg_color_t col;
     float r;
     plutovg_gradient_stop_t stops[2];
     switch(style->kind) {
         case TVG_STYLE_FLAT:
-            col.a=ctx->colors[style->flat].a;
-            col.r=ctx->colors[style->flat].r;
-            col.g=ctx->colors[style->flat].g;
-            col.b=ctx->colors[style->flat].b;
+            col = tvg_color_to_plutovg(&ctx->colors[style->flat]);
             plutovg_canvas_set_color(ctx->cvs,&col);
             break;
         case TVG_STYLE_LINEAR:
-            col.a=ctx->colors[style->linear.color0].a;
-            col.r=ctx->colors[style->linear.color0].r;
-            col.g=ctx->colors[style->linear.color0].g;
-            col.b=ctx->colors[style->linear.color0].b;
+            col = tvg_color_to_plutovg(&ctx->colors[style->linear.color0]);
             stops[0].color = col;
             stops[0].offset = 0;
-            col.a=ctx->colors[style->linear.color1].a;
-            col.r=ctx->colors[style->linear.color1].r;
-            col.g=ctx->colors[style->linear.color1].g;
-            col.b=ctx->colors[style->linear.color1].b;
+            col = tvg_color_to_plutovg(&ctx->colors[style->linear.color1]);
             stops[1].color = col;
             stops[1].offset = 1;
             plutovg_canvas_set_linear_gradient(ctx->cvs,
@@ -583,16 +579,10 @@ static result_t tvg_apply_style(tvg_context_t* ctx, const tvg_style_t* style) {
             
             break;
         case TVG_STYLE_RADIAL:
-            col.a=ctx->colors[style->radial.color0].a;
-            col.r=ctx->colors[style->radial.color0].r;
-            col.g=ctx->colors[style->radial.color0].g;
-            col.b=ctx->colors[style->radial.color0].b;
+            col = tvg_color_to_plutovg(&ctx->colors[style->radial.color0]);
             stops[0].color = col;
             stops[0].offset = 0;
-            col.a=ctx->colors[style->radial.color1].a;
-            col.r=ctx->colors[style->radial.color1].r;
-            col.g=ctx->colors[style->radial.color1].g;
-            col.b=ctx->colors[style->radial.color1].b;
+            col = tvg_color_to_plutovg(&ctx->colors[style->radial.color1]);
             stops[1].color = col;
             stops[1].offset = 1;
             r=tvg_distance(&style->radial.point0,&style->radial.point1);
