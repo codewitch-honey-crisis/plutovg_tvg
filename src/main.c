@@ -1281,7 +1281,7 @@ static tvg_result_t tvg_parse_commands(tvg_context_t* ctx) {
     return TVG_SUCCESS;
 }
 
-static tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_state,
+extern tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_state,
                                         uint32_t* out_width,
                                         uint32_t* out_height) {
     tvg_context_t ctx;
@@ -1301,7 +1301,7 @@ static tvg_result_t tvg_document_dimensions(tvg_input_func_t inp, void* inp_stat
     return res;
 }
 
-static tvg_result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
+extern tvg_result_t tvg_render_document(tvg_input_func_t inp, void* inp_state,
                                     plutovg_canvas_t* canvas,
                                     const plutovg_rect_t* bounds) {
     tvg_context_t ctx;
@@ -1337,7 +1337,7 @@ error:
     return res;
 }
 
-size_t inp_func(uint8_t* data, size_t to_read, void* state) {
+static size_t inp_func(uint8_t* data, size_t to_read, void* state) {
     FILE* f = (FILE*)state;
     return fread(data, 1, to_read, f);
 }
